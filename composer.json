@@ -1,0 +1,20 @@
+{
+    "name": "vendor/hoi",
+    "autoload": {
+        "psr-4": {
+            "Vendor\\Hoi\\": "src/"
+        }
+    },
+    "authors": [
+        {
+            "name": "wickedghost38",
+            "email": "244988@edu.rocfriesepoort.nl"
+        }
+    ],
+    "require": {
+        "setasign/fpdi": "^2.3",
+        "tecnickcom/tcpdf": "^6.3",
+        "setasign/fpdf": "^1.8"
+}
+
+}
