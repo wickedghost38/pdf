@@ -1,12 +1,23 @@
 <?php
 require_once('vendor/autoload.php');
 
-use setasign\Fpdi\Fpdi;
+$errorlogs = [
+    'not pdf' => 'The uploaded file is not a PDF.',
+    'loading too long' => 'The process took too long to complete.',
+    'download failed' => 'No files were uploaded for processing.'
+];
 
-//calls the function to combine the pdfs
+function logError($errorType, $errorlogs) {
+    $timestamp = date('Y-m-d H:i:s');
+    $message = isset($errorlogs[$errorType]) ? $errorlogs[$errorType] : 'Unknown error';
+    $logMessage = "{$timestamp} - {$message}\n";
+
+    file_put_contents('errorlog.txt', $logMessage, FILE_APPEND);
+}
+
 function combinePDFs($files) {
-    $pdf = new FPDI();
-//checks pdfs and add numbers to page
+    $pdf = new \setasign\Fpdi\Fpdi();
+
     foreach ($files as $file) {
         $pageCount = $pdf->setSourceFile($file);
         for ($pageNo = 1; $pageNo <= $pageCount; $pageNo++) {
@@ -16,10 +27,10 @@ function combinePDFs($files) {
             $pdf->useTemplate($templateId);
         }
     }
-    //combines the pdfs
+
     $pdf->Output('D', 'combined.pdf'); 
 }
-//size order from top to bottom
+
 $pageSizes = [
     'A9' => [37, 52],
     'A8' => [52, 74],
@@ -32,19 +43,37 @@ $pageSizes = [
     'A1' => [594, 841],
     'A0' => [841, 1189]
 ];
-//saves files before deleting them
+
 $uploadedFiles = [];
 foreach ($_FILES['pdf_files']['tmp_name'] as $key => $tmpName) {
+    if (mime_content_type($tmpName) !== 'application/pdf') {
+        logError('not pdf', $errorlogs);
+        continue;
+    }
+    
+    $fileHandle = fopen($tmpName, 'rb');
+    $header = fread($fileHandle, 4);
+    fclose($fileHandle);
+    
+    if ($header !== '%PDF') {
+        logError('not pdf', $errorlogs);
+        continue;
+    }
+    
     $uploadedFiles[] = $tmpName;
 }
 
 if (!empty($uploadedFiles)) {
-    combinePDFs($uploadedFiles);
-    // Delete the temporary files after combining
-    foreach ($uploadedFiles as $file) {
-        unlink($file);
+    try {
+        combinePDFs($uploadedFiles);
+        foreach ($uploadedFiles as $file) {
+            unlink($file);
+        }
+    } catch (Exception $e) {
+        logError('loading too long', $errorlogs);
     }
 } else {
     echo "No files uploaded.";
+    logError('download failed', $errorlogs);
 }
 
