@@ -61,8 +61,9 @@ function combinePDFs($files, $outputFileName) {
             $pdf->useTemplate($templateId);
         }
     }
+    $outputFileName = isset($_POST['file_name']) && !empty(trim($_POST['file_name'])) ? $_POST['file_name'] : rand(1000, 9999);
 
-    $pdf->Output('D', $outputFileName . '.pdf'); 
+    $pdf->Output('D', $outputFileName . '.pdf' ); 
 }
 
 if (count($_FILES['pdf_files']['tmp_name']) < 2) {
